@@ -2,6 +2,6 @@
 
 ## Prerequisite
 
-- libipmeta 1.0 (https://github.com/CAIDA/libipmeta/releases/tag/v1.0.0)
+- libipmeta 3.0 (https://github.com/CAIDA/libipmeta)
 - Python2
 - wandio 0.1 (`pip2 install pywandio==0.1`)
