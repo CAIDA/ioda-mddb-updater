@@ -115,17 +115,29 @@ class MddbUpdater:
         # connect to database
         db_url_str = os.getenv("DATABASE_URL")
         assert db_url_str is not None
+
         parse_res = urlparse.urlparse(db_url_str)
         conn = psycopg2.connect("dbname='%s' user='%s' password='%s' host='%s'" %
                                 (parse_res.path[1:], parse_res.username, parse_res.password, parse_res.hostname))
+        conn.autocommit = False
         cur = conn.cursor()
 
         # clear out existing tables
-        # NOTE: this will cause a 1-2 minute downtime for the usage
+
+        # The following SQL code block can safely delete all content in transaction:
+        #
+        # BEGIN;
+        #
+        # DELETE FROM mddb_entity_relationship;
+        # DELETE FROM mddb_entity_attribute;
+        # DELETE FROM mddb_entity;
+        # DELETE FROM mddb_entity_type;
+        #
+        # ROLLBACK;
+
         logging.info("clearing tables first.")
-        cur.execute("truncate table %s" % ",".join(
-            ["mddb_entity", "mddb_entity_type", "mddb_entity_attribute", "mddb_entity_relationship"]))
-        conn.commit()
+        for db in ["mddb_entity_relationship", "mddb_entity_attribute", "mddb_entity", "mddb_entity_type"]:
+            cur.execute("DELETE FROM %s" % db)
         logging.info("tables cleared.")
 
         # copy data into tables
@@ -137,6 +149,7 @@ class MddbUpdater:
                               self.rows_attributes)
         self._copy_into_table(conn, cur, "mddb_entity_relationship", ["from_id", "to_id"], self.rows_relationships)
 
+        conn.commit()
         # close database connection
         cur.close()
         conn.close()
