@@ -82,7 +82,7 @@ class MddbUpdater:
         self.rows_relationships = []
 
     @staticmethod
-    def _copy_into_table(conn, cur, table, columns, rows):
+    def _copy_into_table(cur, table, columns, rows):
         """
         Bulk write table rows into database using COPY operation.
 
@@ -105,7 +105,6 @@ class MddbUpdater:
         # call postgres COPY command to write data into database in bulk
         # this is the most effective way
         cur.copy_from(sio, table, columns=columns)
-        conn.commit()
 
     def update_database(self):
         """
@@ -143,11 +142,10 @@ class MddbUpdater:
         # copy data into tables
         # NOTE: the mddb_entity_type must be first filled due to forein-key constraints on the other tables
         logging.info("writing new data")
-        self._copy_into_table(conn, cur, "mddb_entity_type", ["id", "type"], self.rows_types)
-        self._copy_into_table(conn, cur, "mddb_entity", ["id", "type_id", "code", "name"], self.rows_entities)
-        self._copy_into_table(conn, cur, "mddb_entity_attribute", ["id", "metadata_id", "key", "value"],
-                              self.rows_attributes)
-        self._copy_into_table(conn, cur, "mddb_entity_relationship", ["from_id", "to_id"], self.rows_relationships)
+        self._copy_into_table(cur, "mddb_entity_type", ["id", "type"], self.rows_types)
+        self._copy_into_table(cur, "mddb_entity", ["id", "type_id", "code", "name"], self.rows_entities)
+        self._copy_into_table(cur, "mddb_entity_attribute", ["id", "metadata_id", "key", "value"], self.rows_attributes)
+        self._copy_into_table(cur, "mddb_entity_relationship", ["from_id", "to_id"], self.rows_relationships)
 
         conn.commit()
         # close database connection
