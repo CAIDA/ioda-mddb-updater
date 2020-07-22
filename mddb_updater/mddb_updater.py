@@ -229,7 +229,7 @@ class MddbUpdater:
                 self.rows_attributes.append((self.next_attr_id, id, key, val))
                 self.next_attr_id += 1
         except ValueError as err:
-            print self.next_type_id, id, type, code, name, attrs
+            print(self.next_type_id, id, type, code, name, attrs)
             raise err
 
     def _generate_continents(self):
@@ -556,60 +556,68 @@ class MddbUpdater:
 
 
 def main():
+    logging.basicConfig(level='INFO',
+                        format='%(asctime)s|mddb-entities|%(levelname)s: %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
     parser = argparse.ArgumentParser(description="""
     Generates entities for the Charthouse Metadata Database
     """)
 
-    ############
-    # REQUIRED #
-    ############
     parser.add_argument('-p', '--pfx2as',
-                        nargs='?', required=True,
-                        help='CAIDA Route Views Prefix2AS File')
-    # e.g. /data/routing/routeviews-prefix2as/2016/10/routeviews-rv2-20161010-1200.pfx2as.gz
+                        nargs='?', required=False,
+                        help='CAIDA Route Views Prefix2AS File',
+                        default="swift://datasets-routing-routeviews-prefix2as/routeviews-rv2-latest.pfx2as.gz")
 
-    ################
-    # WITH DEFAULT #
-    ################
     parser.add_argument('-c', '--country-codes',
                         nargs='?', required=False,
                         help='Net Acuity country_codes.csv',
-                        default="/data/external/netacuity-dumps/country_codes.csv")
+                        default="swift://datasets-external-netacq-codes/country_codes.csv")
 
     parser.add_argument('-r', '--region-polygons',
                         nargs='?', required=False,
                         help='Natrual Earth Region Polygons File',
-                        default="/data/external/natural-earth/polygons/ne_10m_admin_1.regions.v3.0.0.processed.polygons.csv.gz")
+                        default="swift://datasets-external-natural-earth/polygons/ne_10m_admin_1.regions.v3.0.0.processed.polygons.csv.gz")
 
     parser.add_argument('-C', '--county-polygons',
                         nargs='?', required=False,
                         help='GADM County Polygons File',
-                        default="/data/external/gadm/polygons/gadm.counties.v2.0.processed.polygons.csv.gz")
+                        default="swift://datasets-external-gadm/polygons/gadm.counties.v2.0.processed.polygons.csv.gz")
 
     # following are needed to do pfx geolocation (and thus AS geolocation)
     parser.add_argument('-b', '--blocks',
                         nargs='?', required=False,
                         help='Net Acuity Edge Blocks File',
-                        default="/data/external/netacuity-dumps/Edge-processed/netacq-4-blocks.latest.csv.gz")
+                        default="swift://datasets-external-netacq-edge-processed/netacq-4-blocks.latest.csv.gz")
 
     parser.add_argument('-l', '--locations',
                         nargs='?', required=False,
                         help='Net Acuity Edge Locations File',
-                        default="/data/external/netacuity-dumps/Edge-processed/netacq-4-locations.latest.csv.gz")
+                        default="swift://datasets-external-netacq-edge-processed/netacq-4-locations.latest.csv.gz")
 
     parser.add_argument('-P', '--polygon-mapping',
                         nargs='?', required=False,
                         help='Net Acuity Edge Polygons File',
-                        default="/data/external/netacuity-dumps/Edge-processed/netacq-4-polygons.latest.csv.gz")
+                        default="swift://datasets-external-netacq-edge-processed/netacq-4-polygons.latest.csv.gz")
 
     opts = vars(parser.parse_args())
 
-    #######
-    # RUN #
-    #######
-    logging.basicConfig(level='DEBUG',
-                        format='%(asctime)s|mddb-entities|%(levelname)s: %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
+    if any(["swift" in opt for opt in opts.values()]):
+        envs = [
+            ("OS_PROJECT_NAME",         os.getenv("OS_PROJECT_NAME")),
+            ("OS_USERNAME",             os.getenv("OS_USERNAME")),
+            ("OS_PASSWORD",             os.getenv("OS_PASSWORD")),
+            ("OS_AUTH_URL",             os.getenv("OS_AUTH_URL")),
+            ("OS_IDENTITY_API_VERSION", os.getenv("OS_IDENTITY_API_VERSION")),
+        ]
+        failed = False
+        for env in envs:
+            if env[1] is None:
+                logging.error("trying to access files on swift but lack swift credential: %s" % env[0])
+                failed = True
+        if failed:
+            exit(1)
+
     updater = MddbUpdater()
     updater.generate_entities(**opts)
 
