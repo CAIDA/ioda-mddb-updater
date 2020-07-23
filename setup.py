@@ -10,7 +10,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
     install_requires=[
-        'pywandio==0.1',
+        'pywandio==0.1.1',
         'py-radix',
         'psycopg2-binary',
         'requests',
