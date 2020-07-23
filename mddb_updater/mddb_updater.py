@@ -113,7 +113,6 @@ class MddbUpdater:
         logging.info("updating database now.")
         # connect to database
         db_url_str = os.getenv("DATABASE_URL")
-        assert db_url_str is not None
 
         parse_res = urlparse.urlparse(db_url_str)
         conn = psycopg2.connect("dbname='%s' user='%s' password='%s' host='%s'" %
@@ -602,7 +601,10 @@ def main():
 
     opts = vars(parser.parse_args())
 
+    # check swift credentials
     if any(["swift" in opt for opt in opts.values()]):
+        # only check swift environment variable credentials if we are using datafiles from swift.
+        # the variables are defined in pairs for showing what variables are missing, if any.
         envs = [
             ("OS_PROJECT_NAME",         os.getenv("OS_PROJECT_NAME")),
             ("OS_USERNAME",             os.getenv("OS_USERNAME")),
@@ -617,6 +619,12 @@ def main():
                 failed = True
         if failed:
             exit(1)
+
+    # check databsae credential
+    if os.getenv("DATABASE_URL") is None:
+        logging.error("missing DATABASE_URL environment variable to access metadata databse")
+        exit(1)
+
 
     updater = MddbUpdater()
     updater.generate_entities(**opts)
