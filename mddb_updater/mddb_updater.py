@@ -164,7 +164,7 @@ class MddbUpdater:
         while has_next:
             try:
                 response = requests.get(
-                    'https://api.panda.caida.org/as2org/v1/asns/?page=%d&perpage=%d' % (cur_page, perpage)
+                    'https://api.data.caida.org/as2org/v1/asns/?page=%d&perpage=%d' % (cur_page, perpage)
                 )
                 response.raise_for_status()
                 res = response.json()
