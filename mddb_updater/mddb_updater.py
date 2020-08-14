@@ -657,8 +657,8 @@ def main():
         logging.error("missing DATABASE_URL environment variable to access metadata databse")
         exit(1)
     # check api URL
-    if os.getenv("API_URL") is None:
-        logging.error("missing API_URL environment variable to testing updated API")
+    if opts["api_url"] is None or os.getenv("API_URL") is None:
+        logging.error("missing API_URL environment variable or 'api-url' parameter")
         exit(1)
 
 
