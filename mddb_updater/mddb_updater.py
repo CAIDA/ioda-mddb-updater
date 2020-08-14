@@ -518,8 +518,33 @@ class MddbUpdater:
 
         return mappings
 
+    def validate_api(self, api_endpoint):
+
+        if api_endpoint is None:
+            api_endpoint = os.getenv("API_URL")
+        assert api_endpoint is not None
+
+        response = requests.get('%s/entities/country/US' % api_endpoint)
+        response.raise_for_status()
+        res = response.json()
+        assert len(res["data"])==1
+        assert res["data"][0]["code"] == "US"
+        assert res["data"][0]["name"] == "United States"
+        assert res["data"][0]["type"] == "country"
+
+        response = requests.get('%s/entities/asn/195' % api_endpoint)
+        response.raise_for_status()
+        res = response.json()
+        assert len(res["data"])==1
+        assert res["data"][0]["code"] == "195"
+        assert res["data"][0]["type"] == "asn"
+        assert res["data"][0]["attrs"]["name"] == "SDSC-AS"
+        assert res["data"][0]["attrs"]["org"] == "San Diego Supercomputer Center"
+
+        logging.info("api validation successful on %s" % api_endpoint)
+
     def generate_entities(self, country_codes, region_polygons, county_polygons, pfx2as,
-                          blocks, locations, polygon_mapping):
+                          blocks, locations, polygon_mapping, api_url):
         """
         Entry point function.
 
@@ -552,6 +577,7 @@ class MddbUpdater:
             self.rows_relationships.append((mapping[1], mapping[0]))
 
         self.update_database()
+        self.validate_api(api_url)
 
 
 def main():
@@ -599,10 +625,16 @@ def main():
                         help='Net Acuity Edge Polygons File',
                         default="swift://datasets-external-netacq-edge-processed/netacq-4-polygons.latest.csv.gz")
 
+    # required api url for validation purpose
+    parser.add_argument('-u', '--api-url',
+                        nargs='?', required=False,
+                        help='Endpoint API URL for testing (e.g. https://api.ioda.caida.org/test)',
+                        default=None)
+
     opts = vars(parser.parse_args())
 
     # check swift credentials
-    if any(["swift" in opt for opt in opts.values()]):
+    if any([opt is not None and "swift" in opt for opt in opts.values()]):
         # only check swift environment variable credentials if we are using datafiles from swift.
         # the variables are defined in pairs for showing what variables are missing, if any.
         envs = [
@@ -620,9 +652,13 @@ def main():
         if failed:
             exit(1)
 
-    # check databsae credential
+    # check databsae URL
     if os.getenv("DATABASE_URL") is None:
         logging.error("missing DATABASE_URL environment variable to access metadata databse")
+        exit(1)
+    # check api URL
+    if opts["api_url"] is None and os.getenv("API_URL") is None:
+        logging.error("missing API_URL environment variable or 'api-url' parameter")
         exit(1)
 
 
