@@ -393,6 +393,7 @@ class MddbUpdater:
 
                 fqid = '.'.join((GEO_PFX, pfqid))
                 id = self.getid(fqid)
+                county_code = fqid.split('.')[5]
                 region_fqid = '.'.join(fqid.split('.')[0:5])
                 region_code = fqid.split('.')[4]
                 region_name = self.REGION_NAMES[region_code]
@@ -404,7 +405,7 @@ class MddbUpdater:
                     mappings.append((region_id, id))
 
                 self.log_entity(
-                    id=id, type='county', code=region_code, name=name,
+                    id=id, type='county', code=county_code, name=name,
                     attrs={
                         'fqid': fqid,
                         'region_code': region_code,

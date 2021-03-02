@@ -17,7 +17,7 @@ RUN curl -so /etc/apt/trusted.gpg.d/caida.gpg https://pkg.caida.org/os/ubuntu/ke
 RUN apt-get -y update && apt-get -y install \
     libwandio1-dev \
     libipmeta2-dev \
-    python-pyipmeta \
+    python-pyipmeta=3.0.0 \
     python-dev \
     python-swiftclient \
     python-setuptools \
